@@ -114,6 +114,9 @@ const Settings = () => {
               onDelete={async () => { await update.mutateAsync({ api_key_gemini: "" }); toast.success("Removida"); }}
               onMakeDefault={async () => { await update.mutateAsync({ preferred_api: "gemini" }); }}
             />
+            <p className="text-xs text-muted-foreground px-1">
+              Para geração de imagens, use uma chave do <a href="https://aistudio.google.com" target="_blank" rel="noreferrer" className="text-primary hover:underline">Google AI Studio</a>. Certifique-se de que sua conta tem acesso à geração de imagens ativado.
+            </p>
           </div>
         </section>
 

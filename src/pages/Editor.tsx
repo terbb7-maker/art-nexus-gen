@@ -132,8 +132,18 @@ const EditorInner = ({ projectId }: { projectId: string }) => {
       const { data, error } = await supabase.functions.invoke("generate-creative", {
         body: { prompt: copy, format: selectedFormat, projectId },
       });
-      if (error) throw error;
-      const imgs = (data?.images || []) as string[];
+      if (error) {
+        const message = (error as any)?.context?.json?.error || (error as any)?.context?.error || error.message || "Erro ao gerar imagens";
+        setGenStatus("error");
+        toast.error(message);
+        return;
+      }
+      if (data?.error) {
+        setGenStatus("error");
+        toast.error(data.error);
+        return;
+      }
+      const imgs = (data?.images || data?.imageUrls || []) as string[];
       // staggered append
       for (let i = 0; i < imgs.length; i++) {
         await new Promise((r) => setTimeout(r, 250));
