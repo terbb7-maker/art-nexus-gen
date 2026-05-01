@@ -51,7 +51,10 @@ export const AuthForm = ({ mode }: { mode: Mode }) => {
         toast.success("Conta criada! Redirecionando...");
         nav("/dashboard");
       } else {
-        const { error } = await supabase.auth.signInWithPassword(parsed.data);
+        const { error } = await supabase.auth.signInWithPassword({
+          email: parsed.data.email,
+          password: parsed.data.password,
+        });
         if (error) throw error;
         toast.success("Bem-vindo de volta!");
         nav("/dashboard");
