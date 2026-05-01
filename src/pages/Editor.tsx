@@ -44,6 +44,8 @@ const EditorInner = ({ projectId }: { projectId: string }) => {
   const [logoUrl, setLogoUrl] = useState<string | undefined>();
   const [photoUrl, setPhotoUrl] = useState<string | undefined>();
   const [showKeyModal, setShowKeyModal] = useState(false);
+  const [debugOpen, setDebugOpen] = useState(false);
+  const [debugResult, setDebugResult] = useState<string>("");
 
   const isNew = projectId === "new";
 
@@ -157,6 +159,30 @@ const EditorInner = ({ projectId }: { projectId: string }) => {
     }
   };
 
+  const runDebug = async () => {
+    setDebugOpen(true);
+    setDebugResult("Executando diagnóstico...");
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const headers = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session?.access_token}`,
+      };
+      const [tcRes, gcRes] = await Promise.all([
+        fetch(`${baseUrl}/functions/v1/test-connection`, { method: "POST", headers, body: "{}" })
+          .then((r) => r.json()).catch((e) => ({ error: String(e) })),
+        fetch(`${baseUrl}/functions/v1/generate-creative/test`, { method: "GET", headers })
+          .then((r) => r.json()).catch((e) => ({ error: String(e) })),
+      ]);
+      const result = { "test-connection": tcRes, "generate-creative/test": gcRes };
+      console.log("DEBUG RESULT:", JSON.stringify(result, null, 2));
+      setDebugResult(JSON.stringify(result, null, 2));
+    } catch (e: any) {
+      setDebugResult(`Erro: ${e?.message || String(e)}`);
+    }
+  };
+
   return (
     <div className="h-screen flex flex-col">
       {/* Top bar */}
@@ -219,6 +245,13 @@ const EditorInner = ({ projectId }: { projectId: string }) => {
             <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="hsl(240 15% 18%)" />
             <Controls className="!bg-card !border-border [&>button]:!bg-card [&>button]:!border-border [&>button]:!text-foreground" />
           </ReactFlow>
+          <button
+            onClick={runDebug}
+            className="absolute bottom-3 left-3 z-10 px-2.5 py-1 text-[11px] rounded-md bg-muted/80 text-muted-foreground hover:text-foreground border border-border/60 backdrop-blur"
+            title="Executa um diagnóstico das edge functions e do perfil"
+          >
+            Debug
+          </button>
         </div>
       </div>
 
@@ -231,6 +264,18 @@ const EditorInner = ({ projectId }: { projectId: string }) => {
             </DialogDescription>
           </DialogHeader>
           <Button variant="hero" onClick={() => nav("/settings")}>Ir para Configurações</Button>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={debugOpen} onOpenChange={setDebugOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Diagnóstico</DialogTitle>
+            <DialogDescription>Resultado das edge functions test-connection e generate-creative/test.</DialogDescription>
+          </DialogHeader>
+          <pre className="text-[11px] bg-muted/50 border border-border/60 rounded-md p-3 max-h-[60vh] overflow-auto whitespace-pre-wrap font-mono">
+{debugResult}
+          </pre>
         </DialogContent>
       </Dialog>
     </div>
