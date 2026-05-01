@@ -14,7 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          api_key_gemini: string | null
+          api_key_openai: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string | null
+          plan: string | null
+          preferred_api: string | null
+          updated_at: string
+        }
+        Insert: {
+          api_key_gemini?: string | null
+          api_key_openai?: string | null
+          created_at?: string
+          email?: string | null
+          id: string
+          name?: string | null
+          plan?: string | null
+          preferred_api?: string | null
+          updated_at?: string
+        }
+        Update: {
+          api_key_gemini?: string | null
+          api_key_openai?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          plan?: string | null
+          preferred_api?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
