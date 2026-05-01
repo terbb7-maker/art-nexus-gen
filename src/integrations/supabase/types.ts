@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      generations: {
+        Row: {
+          created_at: string
+          format: string | null
+          id: string
+          image_urls: string[] | null
+          project_id: string | null
+          prompt_used: string | null
+          provider: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          format?: string | null
+          id?: string
+          image_urls?: string[] | null
+          project_id?: string | null
+          prompt_used?: string | null
+          provider?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          format?: string | null
+          id?: string
+          image_urls?: string[] | null
+          project_id?: string | null
+          prompt_used?: string | null
+          provider?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           api_key_gemini: string | null
@@ -22,6 +63,7 @@ export type Database = {
           email: string | null
           id: string
           name: string | null
+          onboarding_completed: boolean | null
           plan: string | null
           preferred_api: string | null
           updated_at: string
@@ -33,6 +75,7 @@ export type Database = {
           email?: string | null
           id: string
           name?: string | null
+          onboarding_completed?: boolean | null
           plan?: string | null
           preferred_api?: string | null
           updated_at?: string
@@ -44,9 +87,46 @@ export type Database = {
           email?: string | null
           id?: string
           name?: string | null
+          onboarding_completed?: boolean | null
           plan?: string | null
           preferred_api?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          created_at: string
+          format: string | null
+          id: string
+          name: string
+          node_config: Json | null
+          template: string | null
+          thumbnail_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          format?: string | null
+          id?: string
+          name?: string
+          node_config?: Json | null
+          template?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          format?: string | null
+          id?: string
+          name?: string
+          node_config?: Json | null
+          template?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
