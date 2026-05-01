@@ -190,7 +190,12 @@ async function validateOpenAIKey(apiKey: string): Promise<{ ok: boolean; error?:
 async function validateGeminiKey(apiKey: string): Promise<{ ok: boolean; error?: string }> {
   try {
     const r = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: "ping" }] }] }),
+      },
     );
     if (!r.ok) {
       const e = await r.json().catch(() => ({}));
