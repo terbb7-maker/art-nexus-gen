@@ -245,6 +245,13 @@ const EditorInner = ({ projectId }: { projectId: string }) => {
             <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="hsl(240 15% 18%)" />
             <Controls className="!bg-card !border-border [&>button]:!bg-card [&>button]:!border-border [&>button]:!text-foreground" />
           </ReactFlow>
+          <button
+            onClick={runDebug}
+            className="absolute bottom-3 left-3 z-10 px-2.5 py-1 text-[11px] rounded-md bg-muted/80 text-muted-foreground hover:text-foreground border border-border/60 backdrop-blur"
+            title="Executa um diagnóstico das edge functions e do perfil"
+          >
+            Debug
+          </button>
         </div>
       </div>
 
@@ -257,6 +264,18 @@ const EditorInner = ({ projectId }: { projectId: string }) => {
             </DialogDescription>
           </DialogHeader>
           <Button variant="hero" onClick={() => nav("/settings")}>Ir para Configurações</Button>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={debugOpen} onOpenChange={setDebugOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Diagnóstico</DialogTitle>
+            <DialogDescription>Resultado das edge functions test-connection e generate-creative/test.</DialogDescription>
+          </DialogHeader>
+          <pre className="text-[11px] bg-muted/50 border border-border/60 rounded-md p-3 max-h-[60vh] overflow-auto whitespace-pre-wrap font-mono">
+{debugResult}
+          </pre>
         </DialogContent>
       </Dialog>
     </div>
