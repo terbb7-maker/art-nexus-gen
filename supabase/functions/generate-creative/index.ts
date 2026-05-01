@@ -274,7 +274,8 @@ Deno.serve(async (req) => {
       if (p === "gemini") {
         if (!profile.api_key_gemini) return { images: [], error: "Configure sua chave Gemini nas configurações" };
         return generateWithGemini({
-          client: supabaseClient, apiKey: profile.api_key_gemini, prompt: enhancedPrompt,
+          client: supabaseClient, apiKey: profile.api_key_gemini,
+          prompt: enhancedPrompt, rawPrompt: prompt, formatHint: fmt.hint, format,
           count: 4, userId: user.id, projectId: projectId || null,
         });
       }
