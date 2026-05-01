@@ -44,6 +44,8 @@ const EditorInner = ({ projectId }: { projectId: string }) => {
   const [logoUrl, setLogoUrl] = useState<string | undefined>();
   const [photoUrl, setPhotoUrl] = useState<string | undefined>();
   const [showKeyModal, setShowKeyModal] = useState(false);
+  const [debugOpen, setDebugOpen] = useState(false);
+  const [debugResult, setDebugResult] = useState<string>("");
 
   const isNew = projectId === "new";
 
