@@ -84,55 +84,89 @@ async function generateWithOpenAI(opts: {
   return { images };
 }
 
+// Pollinations dimensions per format slug/label
+const POLLINATIONS_DIMS: Record<string, { w: number; h: number }> = {
+  "feed-1-1": { w: 1024, h: 1024 },
+  "Feed 1:1": { w: 1024, h: 1024 },
+  "stories-9-16": { w: 576, h: 1024 },
+  "Stories 9:16": { w: 576, h: 1024 },
+  "banner-16-9": { w: 1024, h: 576 },
+  "Banner 16:9": { w: 1024, h: 576 },
+  "linkedin": { w: 1024, h: 536 },
+  "LinkedIn 1.91:1": { w: 1024, h: 536 },
+  "flyer-a4": { w: 794, h: 1123 },
+  "Flyer A4": { w: 794, h: 1123 },
+};
+
+// Use Gemini text model to enhance the prompt — works with any AI Studio key
+async function enhancePromptWithGemini(apiKey: string, userPrompt: string, formatHint: string): Promise<{ text: string; error?: string }> {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: `You are an expert prompt engineer for AI image generation.
+Transform this brief into a detailed, vivid image generation prompt in English.
+Brief: "${userPrompt}"
+Format context: ${formatHint}
+Output ONLY the image generation prompt, nothing else. Make it detailed, professional, for commercial advertising. Max 200 words.`,
+          }],
+        }],
+      }),
+    },
+  );
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    return { text: userPrompt, error: e.error?.message || `HTTP ${res.status}` };
+  }
+  const data = await res.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+  return { text: text || userPrompt };
+}
+
 async function generateWithGemini(opts: {
   client: SupabaseClient;
   apiKey: string;
-  prompt: string;
+  prompt: string;       // already includes formatHint context
+  rawPrompt: string;    // original user brief (for enhancer)
+  formatHint: string;
+  format: string;
   count: number;
   userId: string;
   projectId: string | null;
 }): Promise<{ images: string[]; error?: string }> {
   const images: string[] = [];
-  for (let i = 0; i < opts.count; i++) {
-    const r = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${opts.apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: opts.prompt }] }],
-          generationConfig: {
-            responseModalities: ["IMAGE", "TEXT"],
-            responseMimeType: "text/plain",
-          },
-        }),
-      },
-    );
-    if (!r.ok) {
-      const errorData = await r.json().catch(() => ({}));
-      console.error("Gemini error:", JSON.stringify(errorData));
-      const errMsg = errorData.error?.message || "Unknown error";
-      return {
-        images,
-        error: `Gemini API error: ${errMsg}. Use uma chave do Google AI Studio (aistudio.google.com) com geração de imagens habilitada.`,
-      };
-    }
-    const data = await r.json();
-    const parts = data.candidates?.[0]?.content?.parts || [];
-    for (const part of parts) {
-      if (part.inlineData?.mimeType?.startsWith("image/")) {
-        const b64 = part.inlineData.data;
-        const mimeType = part.inlineData.mimeType;
-        const ext = mimeType.includes("png") ? "png" : "jpg";
-        const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-        const url = await uploadImage(opts.client, opts.userId, opts.projectId, i, bytes, mimeType, ext);
-        if (url) images.push(url);
-        break;
-      }
-    }
+
+  // Step 1: enhance prompt via Gemini text model (validates the key too)
+  const enhanced = await enhancePromptWithGemini(opts.apiKey, opts.rawPrompt, opts.formatHint);
+  if (enhanced.error) {
+    return { images, error: `Gemini API error: ${enhanced.error}. Use uma chave válida do Google AI Studio (aistudio.google.com).` };
   }
+  console.log("Enhanced prompt:", enhanced.text);
+
+  // Step 2: generate images via Pollinations.ai (free FLUX, no key)
+  const dim = POLLINATIONS_DIMS[opts.format] || { w: 1024, h: 1024 };
+  const basePrompt = encodeURIComponent(`${enhanced.text}, professional marketing creative, ${opts.formatHint}, commercial advertising`);
+
+  for (let i = 0; i < opts.count; i++) {
+    const seed = Math.floor(Math.random() * 999999);
+    const imageUrl = `https://image.pollinations.ai/prompt/${basePrompt}?width=${dim.w}&height=${dim.h}&seed=${seed}&model=flux&nologo=true&enhance=true`;
+    const imgResponse = await fetch(imageUrl);
+    if (!imgResponse.ok) {
+      console.error("Pollinations error:", imgResponse.status);
+      continue;
+    }
+    const buf = new Uint8Array(await imgResponse.arrayBuffer());
+    const url = await uploadImage(opts.client, opts.userId, opts.projectId, i, buf, "image/jpeg", "jpg");
+    if (url) images.push(url);
+    else images.push(imageUrl); // fallback to direct URL
+  }
+
   if (images.length === 0) {
-    return { images, error: "Gemini não retornou imagens. Sua chave pode não ter acesso à geração de imagens." };
+    return { images, error: "Falha ao gerar imagens via Pollinations." };
   }
   return { images };
 }
