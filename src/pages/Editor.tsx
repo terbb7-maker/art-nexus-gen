@@ -159,6 +159,30 @@ const EditorInner = ({ projectId }: { projectId: string }) => {
     }
   };
 
+  const runDebug = async () => {
+    setDebugOpen(true);
+    setDebugResult("Executando diagnóstico...");
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const headers = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session?.access_token}`,
+      };
+      const [tcRes, gcRes] = await Promise.all([
+        fetch(`${baseUrl}/functions/v1/test-connection`, { method: "POST", headers, body: "{}" })
+          .then((r) => r.json()).catch((e) => ({ error: String(e) })),
+        fetch(`${baseUrl}/functions/v1/generate-creative/test`, { method: "GET", headers })
+          .then((r) => r.json()).catch((e) => ({ error: String(e) })),
+      ]);
+      const result = { "test-connection": tcRes, "generate-creative/test": gcRes };
+      console.log("DEBUG RESULT:", JSON.stringify(result, null, 2));
+      setDebugResult(JSON.stringify(result, null, 2));
+    } catch (e: any) {
+      setDebugResult(`Erro: ${e?.message || String(e)}`);
+    }
+  };
+
   return (
     <div className="h-screen flex flex-col">
       {/* Top bar */}
